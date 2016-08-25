@@ -1,0 +1,54 @@
+FROM alpine:3.4
+
+MAINTAINER Joe Richards <joe.richards@rosetta.com>
+RUN set -x \
+ && export BUILD_DEPS=" \
+        autoconf \
+        automake \
+        curl \
+        db-dev \
+        g++ \
+        gcc \
+        git \
+        groff \
+        gzip \
+        libtool \
+        make \
+        nodejs \
+        openssl-dev \
+        python \
+        python-dev \
+        tar \
+        unixodbc-dev \
+        util-linux-dev \
+    " \
+ && apk add --no-cache --update \
+        ${BUILD_DEPS} \
+ && npm install -g graceful-fs \
+ && npm install -g gulp \
+ && git config --global url."https://".insteadOf git:// \
+ && rm -vfr \
+        /tmp/* \
+        /usr/share/man/* \
+        /var/tmp/* \
+        /var/cache/apk/* \
+        /root/.cache
+
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+COPY package.json /usr/src/app/
+RUN npm install
+COPY . /usr/src/app
+
+ENV BUILD_NUMBER=0
+ENV GIT_COMMIT=none
+ENV GIT_BRANCH=none
+ENV CODE_MAJOR=0
+ENV CODE_MINOR=1
+ENV CODE_PATCH=0
+ENV CODE_TIMESTAMP=20161015104002
+
+ENV HEALTHCHECK "{\\"success\\": true, \\"build_number\\": $BUILD_NUMBER, \\"branch\\": \\"${GIT_BRANCH}\\", \\"commit\\": \\"$GIT_COMMIT\\", \\"code_major\\": $CODE_MAJOR, \\"code_minor\\": $CODE_MINOR, \\"code_patch\\": $CODE_PATCH, \\"code_timestamp\\": $CODE_TIMESTAMP}"
+
+CMD sh -c "echo $HEALTHCHECK > dist/healthcheck.json && gulp build"
